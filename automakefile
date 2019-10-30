@@ -1,0 +1,147 @@
+##
+## EPITECH PROJECT, 2018
+## requirement
+## File description:
+## skip-synthesis
+##
+#!/usr/bin/env bash
+
+path=$1
+
+if [ $# != 1 ]
+then
+    exit 84
+fi
+if [ ! -f $path ]
+then
+    exit 84
+fi
+check_res()
+{
+    if [ -z "$1" ]
+    then
+        exit 84
+    fi
+}
+i=0
+IFS=";"
+while read line
+do
+    array=($line)
+    if [[ ${array[0]} == "ZIPFLAGS" ]]
+    then
+        flag=${array[1]}
+    elif [[ ${array[0]} == "ZIP" ]]
+    then
+        bin=${array[1]}
+    elif [[ ${array[0]} == "UNZIPFLAGS" ]]
+    then
+        dec_flag=${array[1]}
+    elif [[ ${array[0]} == "UNZIP" ]]
+    then
+        dec_bin=${array[1]}
+    elif [[ ${array[0]} == "CC" ]]
+    then
+        cc=${array[1]}
+        check_res $cc
+    elif [[ ${array[0]} == "EXEC" ]]
+    then
+        ex=${array[1]}
+        check_res $ex
+    elif [[ ${array[0]} == "HEADERS_DIR" ]]
+    then
+        head=${array[1]}
+    elif [[ ${array[0]} == "CFLAGS" ]]
+    then
+        fla=${array[1]}
+    elif [[ ${array[0]} == "LIBS_DIR" ]]
+    then
+        lib=${array[1]}
+    elif [[ ${array[0]} == "LDFLAGS" ]]
+    then
+        flad=${array[1]}
+    elif [[ ${array[0]} == "SOURCES_DIR" ]]
+    then
+        src=${array[1]}
+    elif [[ ${array[0]} == "BCK_DIR" ]]
+    then
+        backup=${array[1]}
+    elif [[ ${array[0]} == "PROJECT_DIR" ]]
+    then
+        dir=${array[1]}
+        check_res $dir
+    fi
+done < "$path"
+if [ ! -d "$dir/$backup" ]
+then
+    mkdir -p $dir/$backup
+fi
+if [ -z "$head" ]
+then
+    head="."
+fi
+if [ -z "$lib" ]
+then
+    lib="."
+fi
+if [ -z "$src" ]
+then
+    src="."
+fi
+if [ -z "$cc" ]
+then
+    cc="gcc"
+fi
+makefile_path="$dir/Makefile"
+rm -rf ${makefile_path}
+rm $dir/chang_version.sh
+echo -e "#!/usr/bin/env bash\ncount=\`cat .version\`\ncount=\$((count + 1))\necho \$count > .version" >> $dir/chang_version.sh
+chmod 777 $dir/chang_version.sh
+echo -e "##\n## EPITECH PROJECT, 2018\n## makefile\n## File description:\n## makefile\n##\n" >> ${makefile_path}
+echo -e "version=\`cat .version\`" >> ${makefile_path}
+echo -e "\nCC\t=\t${cc}\n" >> ${makefile_path}
+echo -e "NAME\t=\t${ex}\n" >> ${makefile_path}
+echo -e "RM\t=\trm -f" >> ${makefile_path}
+echo -e "\nCFLAGS\t=\t${fla} -I ${head}" >> ${makefile_path}
+echo -e "\nLDFLAGS\t=\t${flad} -L ${lib}" >> ${makefile_path}
+while read line
+do
+    array=($line)
+    if [[ ${array[0]} == *.c ]] && [ ${i} != 0 ]
+    then
+        echo -e "\t\t${src}/${array[0]}\t\0134" >> ${makefile_path}
+    elif [[ ${array[0]} == *.c ]] && [ ${i} == 0 ]
+    then
+        echo -e "\nSRC\t= \t${src}/${array[0]}\t\0134" >> ${makefile_path}
+        ((i++))
+     fi
+done < "$path"
+echo -e "\nOBJ\t=\t\$(SRC:.c=.o)" >> ${makefile_path}
+echo -e "\nall:\t\$(NAME)" >> ${makefile_path}
+echo -e "\n\$(NAME):\t\$(OBJ)" >> ${makefile_path}
+echo -e "\t\$(CC) \$(OBJ) -o \$(NAME) \$(CFLAGS) \$(LDFLAGS)" >> ${makefile_path}
+echo -e "\nclean:" >> ${makefile_path}
+echo -e "\t\$(RM) \$(OBJ)" >> ${makefile_path}
+echo -e "\nfclean: clean" >> ${makefile_path}
+echo -e "\t\$(RM) \$(NAME)" >> ${makefile_path}
+echo -e "\nre: fclean all" >> ${makefile_path}
+echo 0 > $dir/.version
+version=$(<$dir/.version)
+if [ -n "$backup" ]
+then
+    echo -e "\narchive:\n\t$bin $flag ./$backup/archive_\$(version).$bin \$(SRC)\n\t@echo \"./$backup/archive_\$(version).$bin file generated.\"\n\t./chang_version.sh" >> ${makefile_path}
+    echo -e "\nrevert:\n\t$dec_bin $dec_flag ./$backup/archive_\$(version).$bin" >> ${makefile_path}
+    echo -e "\nnum:\n\t@echo \"\$(version)\"" >> ${makefile_path}
+    echo -e "\ndelete:\n\t\$(RM) ./$backup/archive_\$(version).$bin" >> ${makefile_path}
+    echo -e "\n.PHONY: all clean fclean re archive revert num delete" >> ${makefile_path}
+else
+    echo -e "\n.PHONY: all clean fclean re" >> ${makefile_path}
+fi
+output=$(make -C ${dir} re)
+if [ $(echo $?) != 0 ]
+then
+    rm -rf ${makefile_path}
+    exit 84
+else
+    output=$(make -C ${dir} fclean)
+fi

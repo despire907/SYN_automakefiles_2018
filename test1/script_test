@@ -1,0 +1,15 @@
+make
+./testing123
+make clean
+./testing123
+make fclean
+make
+./testing123
+make fclean
+make
+./testing123
+make re
+./testing123
+make fclean
+
+printf "No error detected, everything seems to be done. Please veryfy the ouput yourself\n"
